@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="vi" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Suất Thống Kê Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        dark: { bg: '#0f172a', surface: '#1e293b', border: '#334155' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Math Typography */
+        .math { font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1em; letter-spacing: 0.5px; }
+        .math-bold { font-family: 'Times New Roman', Times, serif; font-weight: bold; font-style: italic; }
+        .formula-box { background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; color: #1e293b; }
+        .dark .formula-box { background-color: #1e293b; border-left-color: #3b82f6; color: #e2e8f0; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes pulse-soft { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        .animate-pulse-soft { animation: pulse-soft 2s infinite ease-in-out; }
+        
+        /* Layout Fixes */
+        .h-screen-safe { height: 100vh; height: 100dvh; }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-dark-bg text-slate-800 dark:text-slate-200 h-screen-safe flex flex-col overflow-hidden transition-colors duration-300">
+
+    <!-- Navbar -->
+    <nav class="shrink-0 bg-white dark:bg-dark-surface border-b border-slate-200 dark:border-dark-border shadow-sm z-30 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                            <i class="fas fa-square-root-variable text-sm"></i>
+                        </div>
+                        <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-blue-800 dark:from-blue-400 dark:to-blue-200 hidden sm:block">
+                            XSTK Master
+                        </span>
+                    </div>
+                    <div class="ml-6 flex space-x-2 sm:space-x-4">
+                        <button onclick="app.switchTab('learn')" id="tab-learn" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20">
+                            <i class="fas fa-book-open mr-2"></i>Học Tập
+                        </button>
+                        <button onclick="app.switchTab('exam')" id="tab-exam" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-dark-border">
+                            <i class="fas fa-file-contract mr-2"></i>Ôn Thi
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex flex-col items-end">
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Tiến độ khóa học</span>
+                        <div class="w-32 h-2 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden">
+                            <div id="nav-progress-bar" class="h-full bg-green-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button onclick="app.toggleTheme()" class="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
+                        <i id="theme-icon" class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <main class="flex-1 relative overflow-hidden">
+        
+        <!-- ==================== TAB 1: LEARN (CORE) ==================== -->
+        <div id="view-learn" class="w-full h-full flex flex-col md:flex-row absolute inset-0 transition-opacity duration-300">
+            
+            <!-- Sidebar: Navigation & Progress -->
+            <div class="w-full md:w-80 bg-white dark:bg-dark-surface border-b md:border-b-0 md:border-r border-slate-200 dark:border-dark-border flex flex-col shrink-0 h-1/4 md:h-full z-10">
+                <div class="p-4 border-b border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface/80 shrink-0">
+                    <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider mb-2">Lộ trình học</h2>
+                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        <span id="progress-text">Hoàn thành: 0/0 bài</span>
+                        <span id="progress-percent" class="text-primary-600 dark:text-primary-400 font-bold">0%</span>
+                    </div>
+                </div>
+                <!-- Slide List -->
+                <div class="flex-1 overflow-y-auto p-2 space-y-1" id="slide-nav-list">
+                    <!-- Nav items injected via JS -->
+                </div>
+            </div>
+
+            <!-- Main Slide Content Area -->
+            <!-- FIX GIAO DIỆN: Sử dụng flex-col, overflow-hidden cho container và overflow-y-auto cho content -->
+            <div class="flex-1 h-full flex flex-col bg-slate-50 dark:bg-dark-bg relative overflow-hidden">
+                
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto scroll-smooth p-4 sm:p-6 lg:p-8" id="slide-content-area">
+                    <div class="max-w-4xl mx-auto pb-8">
+                        <div class="bg-white dark:bg-dark-surface rounded-2xl shadow-sm border border-slate-200 dark:border-dark-border overflow-hidden">
+                            <!-- Header -->
+                            <div class="px-6 py-5 border-b border-slate-100 dark:border-dark-border bg-white dark:bg-dark-surface sticky top-0 z-10">
+                                <span id="slide-chapter-badge" class="inline-block px-3 py-1 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 rounded-full text-xs font-bold mb-2">Chương 1</span>
+                                <h1 id="slide-title" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-tight">Tiêu đề bài học</h1>
+                            </div>
+                            
+                            <!-- Content Body -->
+                            <div class="p-6">
+                                <!-- Theory -->
+                                <div class="prose prose-slate dark:prose-invert max-w-none mb-10" id="slide-theory">
+                                    <!-- Lý thuyết injected here -->
+                                </div>
+
+                                <!-- Examples Divider -->
+                                <div id="examples-divider" class="flex items-center gap-4 mb-6">
+                                    <div class="h-px bg-slate-200 dark:bg-dark-border flex-1"></div>
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"><i class="fas fa-laptop-code mr-2"></i>Ví Dụ & Kiểm Tra Tại Chỗ</span>
+                                    <div class="h-px bg-slate-200 dark:bg-dark-border flex-1"></div>
+                                </div>
+                                <p id="examples-instruction" class="text-sm text-slate-500 dark:text-slate-400 mb-6 italic text-center">Hãy đọc kỹ ví dụ nguyên văn từ giáo trình, xem giải thích, và phải vượt qua bài kiểm tra để mở khóa nội dung tiếp theo.</p>
+
+                                <!-- Examples Container -->
+                                <div id="slide-examples-container" class="space-y-8">
+                                    <!-- Examples and Spot Checks injected here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Static Bottom Action Bar (FIXED: Sẽ luôn nằm dưới cùng, không đè nội dung) -->
+                <div class="shrink-0 p-4 bg-white dark:bg-dark-surface border-t border-slate-200 dark:border-dark-border shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-20">
+                    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div id="lock-status" class="flex items-center justify-center px-4 py-3 rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 w-full sm:w-auto">
+                            <i class="fas fa-lock mr-2"></i> <span class="font-medium text-sm">Hoàn thành bài kiểm tra bên trên để đi tiếp</span>
+                        </div>
+                        <button id="btn-next-slide" disabled onclick="app.nextSlide()" class="w-full sm:w-auto opacity-50 cursor-not-allowed bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center group">
+                            Trang Tiếp Theo 
+                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 2: EXAM (COs) ==================== -->
+        <div id="view-exam" class="w-full h-full absolute inset-0 opacity-0 pointer-events-none transition-opacity duration-300 bg-slate-50 dark:bg-dark-bg flex flex-col">
+            
+            <!-- Exam List View -->
+            <div id="exam-list-view" class="flex-1 overflow-y-auto p-4 sm:p-8">
+                <div class="max-w-6xl mx-auto">
+                    <div class="text-center mb-10">
+                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-3">Trung Tâm Ôn Thi Độc Quyền</h1>
+                        <p class="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">Được thiết kế bám sát chuẩn đầu ra (COs). Hệ thống tự động xáo trộn và chấm điểm ngay lập tức.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <!-- Giữa Kỳ -->
+                        <div class="bg-white dark:bg-dark-surface rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-dark-border">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 flex items-center justify-center text-xl">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Ôn thi Giữa Kỳ</h2>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Trọng số 30% • Chương 1</p>
+                                </div>
+                            </div>
+                            <div class="space-y-3" id="midterm-list">
+                                <!-- Midterm Exams injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Cuối Kỳ -->
+                        <div class="bg-white dark:bg-dark-surface rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-dark-border">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400 flex items-center justify-center text-xl">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Ôn thi Cuối Kỳ</h2>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Trọng số 50% • Chương 2, 3, 4, 5</p>
+                                </div>
+                            </div>
+                            <div class="space-y-3" id="final-list">
+                                <!-- Final Exams injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Exam View -->
+            <div id="active-exam-view" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+                <!-- Exam Header -->
+                <div class="shrink-0 bg-white dark:bg-dark-surface border-b border-slate-200 dark:border-dark-border px-4 py-4 shadow-sm z-20">
+                    <div class="max-w-4xl mx-auto flex items-center justify-between">
+                        <div>
+                            <button onclick="app.exitExam()" class="text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors mb-1">
+                                <i class="fas fa-arrow-left mr-1"></i> Quay lại
+                            </button>
+                            <h2 id="active-exam-title" class="text-lg sm:text-xl font-bold text-slate-800 dark:text-white leading-tight">Đề thi</h2>
+                        </div>
+                        <button onclick="app.submitExam()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors">
+                            Nộp Bài
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Exam Questions Area -->
+                <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 dark:bg-dark-bg" id="exam-questions-area">
+                    <div class="max-w-4xl mx-auto space-y-6" id="exam-questions-container">
+                        <!-- Questions injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exam Result View -->
+            <div id="exam-result-view" class="hidden flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50 dark:bg-dark-bg">
+                <div class="max-w-3xl mx-auto">
+                    <div class="bg-white dark:bg-dark-surface rounded-2xl shadow-lg border border-slate-200 dark:border-dark-border overflow-hidden">
+                        <div class="p-8 text-center bg-gradient-to-b from-primary-50 to-white dark:from-dark-surface dark:to-dark-surface border-b border-slate-100 dark:border-dark-border">
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Kết Quả Bài Thi</h2>
+                            <div class="text-6xl font-black text-primary-600 dark:text-primary-400 my-4" id="result-score">0.0</div>
+                            <p class="text-slate-500 dark:text-slate-400 font-medium text-lg" id="result-text">Đúng 0/0 câu</p>
+                        </div>
+                        <div class="p-6 bg-slate-50 dark:bg-slate-900/50">
+                            <h3 class="font-bold text-slate-800 dark:text-white mb-4"><i class="fas fa-list-check mr-2"></i>Chi tiết đáp án:</h3>
+                            <div class="space-y-4" id="result-details-container">
+                                <!-- Result details injected here -->
+                            </div>
+                        </div>
+                        <div class="p-6 border-t border-slate-200 dark:border-dark-border text-center bg-white dark:bg-dark-surface">
+                            <button onclick="app.exitExam()" class="bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-xl shadow transition-colors">
+                                Về Trung Tâm Ôn Thi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // HOÀN CHỈNH 100% KHO DỮ LIỆU TOÁN HỌC - KHÔNG CẮT XÉN
+        const appData = {
+            slides: [
+                // =============== CHƯƠNG 1 ===============
+                {
+                    id: 'c1_b1',
+                    chapter: 'Chương 1',
+                    title: 'Những khái niệm cơ bản về lý thuyết XS: Bài 1. Phép đếm',
+                    theory: `
+                        <h3>1. Quy tắc đếm</h3>
+                        <p><strong>Quy tắc nhân:</strong> Giả sử một công việc có k giai đoạn. Giai đoạn 1 có <span class="math">n<sub>1</sub></span> cách, ..., Giai đoạn k có <span class="math">n<sub>k</sub></span> cách. Số cách hoàn thành công việc: <span class="math">n = n<sub>1</sub> &middot; n<sub>2</sub> &middot; ... &middot; n<sub>k</sub></span></p>
+                        <p><strong>Quy tắc cộng:</strong> Giả sử một công việc có k trường hợp. TH1 có <span class="math">n<sub>1</sub></span> cách, ..., THk có <span class="math">n<sub>k</sub></span> cách. Số cách thực hiện: <span class="math">n = n<sub>1</sub> + n<sub>2</sub> + ... + n<sub>k</sub></span></p>
+                        
+                        <h3>2. Giải tích tổ hợp</h3>
+                        <div class="formula-box">
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong>Chỉnh hợp không lặp:</strong> Chọn k phần tử từ n phần tử, <em>có</em> phân biệt thứ tự, <em>khác nhau</em>.<br> Công thức: <span class="math">A<sub>n</sub><sup>k</sup> = n! / (n-k)!</span></li>
+                                <li><strong>Hoán vị:</strong> Chỉnh hợp chập n của n phần tử. Sắp xếp <em>có</em> thứ tự đủ mặt n phần tử.<br> Công thức: <span class="math">P<sub>n</sub> = n!</span></li>
+                                <li><strong>Chỉnh hợp lặp:</strong> Chọn k từ n, <em>có</em> thứ tự, <em>có thể lặp lại</em>.<br> Công thức: <span class="math">B<sub>n</sub><sup>k</sup> = n<sup>k</sup></span></li>
+                                <li><strong>Tổ hợp:</strong> Chọn k từ n, <em>không</em> quan tâm thứ tự, <em>khác nhau</em>.<br> Công thức: <span class="math">C<sub>n</sub><sup>k</sup> = n! / [(n-k)! &middot; k!] = A<sub>n</sub><sup>k</sup> / k!</span></li>
+                            </ul>
+                        </div>
+                        <p><em>Chú ý:</em> Khi áp dụng quy tắc nhân, nếu có k phần tử không phân biệt thứ tự thì kết quả phải chia cho k!</p>
+                    `,
+                    examples: [
+                        {
+                            id: 'c1_b1_ex1',
+                            text: '<strong>Ví dụ (Quy tắc nhân):</strong> Một hộp đựng 2 bi đỏ và 3 bi trắng. Chọn ngẫu nhiên 2 bi từ hộp này. Tính số cách chọn được 1 bi đỏ và 1 bi trắng?',
+                            stepByStep: `
+                                <p>- Giai đoạn 1: Chọn 1 bi đỏ từ 2 bi đỏ, có 2 cách.</p>
+                                <p>- Giai đoạn 2: Chọn 1 bi trắng từ 3 bi trắng, có 3 cách.</p>
+                                <p>Áp dụng quy tắc nhân: 2 &middot; 3 = 6 cách.</p>
+                            `,
+                            variations: [
+                                { q: 'Một giỏ có 4 quả táo và 5 quả cam. Cần chọn ra 1 quả táo và 1 quả cam. Có bao nhiêu cách chọn?', options: ['9', '20', '1', '12'], ansIndex: 1, hint: 'Quy tắc nhân: 4 &middot; 5 = 20.' },
+                                { q: 'Có 3 áo sơ mi và 4 quần tây. Hỏi có bao nhiêu cách phối 1 bộ?', options: ['7', '1', '12', '6'], ansIndex: 2, hint: 'Quy tắc nhân: 3 &middot; 4 = 12.' }
+                            ]
+                        },
+                        {
+                            id: 'c1_b1_ex2',
+                            text: '<strong>Ví dụ (Chỉnh hợp):</strong> Một lớp học 30 sinh viên trong đó có 20 nam. Có bao nhiêu cách chọn ra một Ban cán sự lớp gồm: 1 lớp trưởng, 1 lớp phó, 1 ủy viên học tập, 1 ủy viên đời sống bất kỳ.',
+                            stepByStep: `
+                                <p>Vì các chức vụ khác nhau nên việc chọn người có phân biệt thứ tự (Chỉnh hợp).</p>
+                                <p>Chọn 4 từ 30 SV bất kỳ: <span class="math">A<sub>30</sub><sup>4</sup> = 30! / 26! = 657720</span> cách.</p>
+                            `,
+                            variations: [
+                                { q: 'Có 10 VĐV đua xe. Cần chọn ra 3 người để trao giải Nhất, Nhì, Ba. Hỏi có bao nhiêu cách?', options: ['120', '720', '1000', '30'], ansIndex: 1, hint: 'Chọn 3 người từ 10 người có thứ tự: A<sub>10</sub><sup>3</sup> = 10 &middot; 9 &middot; 8 = 720.' },
+                                { q: 'Lớp có 40 hs, bầu 1 lớp trưởng, 1 lớp phó. Số cách?', options: ['1560', '780', '80', '1600'], ansIndex: 0, hint: 'A<sub>40</sub><sup>2</sup> = 40 &middot; 39 = 1560.' }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'c1_b2_3',
+                    chapter: 'Chương 1',
+                    title: 'Bài 2 & 3. Phép thử, Biến cố & Định nghĩa XS',
+                    theory: `
+                        <h3>1. Phép thử và Biến cố</h3>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><strong>Phép thử:</strong> Hành động không biết trước kết quả. Không gian mẫu: <span class="math">&Omega;</span>.</li>
+                            <li><strong>Quan hệ:</strong> 
+                                Tổng (<span class="math">A+B</span> - ít nhất 1 xảy ra); 
+                                Tích (<span class="math">A&middot;B</span> - đồng thời); 
+                                Xung khắc (<span class="math">A&middot;B = &empty;</span> - không đồng thời).
+                            </li>
+                        </ul>
+                        <h3>2. Định nghĩa xác suất cổ điển</h3>
+                        <div class="formula-box text-center">
+                            <span class="math">P(A) = m / M = (Số biến cố thuận lợi) / (Số biến cố đồng khả năng)</span>
+                        </div>
+                    `,
+                    examples: [
+                        {
+                            id: 'c1_b2_ex1',
+                            text: '<strong>Ví dụ (Cổ điển):</strong> Rút ngẫu nhiên 3 lá bài từ 1 bộ bài 52 lá. Tính xác suất rút 2 lá đỏ và 1 lá đen.',
+                            stepByStep: `
+                                <p>Không gian mẫu: Chọn 3 lá từ 52 lá, M = <span class="math">C<sub>52</sub><sup>3</sup></span> = 22100.</p>
+                                <p>Bộ bài có 26 lá đỏ, 26 lá đen. Chọn 2 đỏ (từ 26) và 1 đen (từ 26): m = <span class="math">C<sub>26</sub><sup>2</sup> &middot; C<sub>26</sub><sup>1</sup></span> = 325 &middot; 26 = 8450.<br>
+                                <span class="math">P(B) = 8450 / 22100 &approx; 0.382</span></p>
+                            `,
+                            variations: [
+                                { q: 'Trong hộp có 5 bi xanh và 4 bi đỏ. Rút ngẫu nhiên 2 bi. Xác suất rút được 2 bi xanh là?', options: ['5/18', '5/36', '10/36', '20/36'], ansIndex: 0, hint: 'M = C<sub>9</sub><sup>2</sup> = 36. Lấy 2 xanh: m = C<sub>5</sub><sup>2</sup> = 10. P = 10/36 = 5/18.' },
+                                { q: 'Hộp có 6 bi đen, 4 bi trắng. Lấy 3 bi. XS được 3 trắng?', options: ['1/30', '1/6', '1/20', '4/120'], ansIndex: 1, hint: 'M = C<sub>10</sub><sup>3</sup>=120. m = C<sub>4</sub><sup>3</sup>=4. P = 4/120 = 1/30.' } // Fixed logic: C4^3 is 4. 4/120 is 1/30.
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'c1_b4_5',
+                    chapter: 'Chương 1',
+                    title: 'Bài 4 & 5. XS Có điều kiện & Công thức XS',
+                    theory: `
+                        <h3>1. XS Có điều kiện</h3>
+                        <p><span class="math">P(A|B) = P(A&middot;B) / P(B)</span></p>
+                        
+                        <h3>2. Các công thức xác suất</h3>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong>Công thức cộng:</strong> <span class="math">P(A+B) = P(A) + P(B) - P(A&middot;B)</span>.</li>
+                            <li><strong>Công thức nhân:</strong> <span class="math">P(A&middot;B) = P(A) &middot; P(B|A)</span>. Độc lập: <span class="math">P(A&middot;B) = P(A) &middot; P(B)</span>.</li>
+                            <li><strong>Công thức XS Đầy đủ:</strong> <span class="math">P(B) = &Sigma; P(A<sub>i</sub>) &middot; P(B|A<sub>i</sub>)</span></li>
+                            <li><strong>Công thức Bayes:</strong> <span class="math">P(A<sub>i</sub>|B) = [P(A<sub>i</sub>) &middot; P(B|A<sub>i</sub>)] / P(B)</span></li>
+                        </ul>
+                    `,
+                    examples: [
+                        {
+                            id: 'c1_b5_ex1',
+                            text: '<strong>Ví dụ (Bayes):</strong> Trường ĐH có 45% nam SV (80% giỏi toán), 55% nữ SV (60% giỏi toán). Chọn 1 SV thấy giỏi toán, XS đó là nam?',
+                            stepByStep: `
+                                <p>A<sub>1</sub>: Nam (0.45), A<sub>2</sub>: Nữ (0.55). B: Giỏi toán.</p>
+                                <p>XS đầy đủ: <span class="math">P(B) = 0.45 &middot; 0.8 + 0.55 &middot; 0.6 = 0.69</span></p>
+                                <p>Bayes: <span class="math">P(A<sub>1</sub>|B) = (0.45 &middot; 0.8) / 0.69 &approx; 0.5217</span></p>
+                            `,
+                            variations: [
+                                { q: 'Kho có 2 máy. Máy I sx 60% (1% phế phẩm), Máy II sx 40% (2% phế phẩm). Rút 1 sp là phế phẩm. XS do Máy II sx?', options: ['4/7', '8/14', '0.571', 'Tất cả đều đúng'], ansIndex: 3, hint: 'P(B) = 0.6&middot;0.01 + 0.4&middot;0.02 = 0.014. P(II|B) = 0.008/0.014 = 8/14 = 4/7.' }
+                            ]
+                        }
+                    ]
+                },
+
+                // =============== CHƯƠNG 2 ===============
+                {
+                    id: 'c2_b1_2',
+                    chapter: 'Chương 2',
+                    title: 'Đại lượng ngẫu nhiên & Tham số đặc trưng',
+                    theory: `
+                        <h3>1. Đại lượng ngẫu nhiên (ĐLNN)</h3>
+                        <p>- <strong>Rời rạc:</strong> Đếm được. Dùng Bảng phân phối xác suất.</p>
+                        <p>- <strong>Liên tục:</strong> Lấp đầy 1 khoảng. Dùng Hàm mật độ <span class="math">f(x)</span>.</p>
+                        
+                        <h3>2. Tham số đặc trưng</h3>
+                        <div class="formula-box">
+                            <ul class="list-disc pl-5">
+                                <li><strong>Kỳ vọng E(X):</strong> Rời rạc: <span class="math">E(X) = &Sigma; x<sub>i</sub>&middot;p<sub>i</sub></span>. Ý nghĩa: Trung bình.</li>
+                                <li><strong>Phương sai V(X):</strong> <span class="math">V(X) = E(X<sup>2</sup>) - [E(X)]<sup>2</sup></span>. Ý nghĩa: Mức độ phân tán, rủi ro.</li>
+                                <li><strong>Độ lệch chuẩn:</strong> <span class="math">&sigma;(X) = &radic;<span style="border-top: 1px solid;">V(X)</span></span></li>
+                            </ul>
+                        </div>
+                    `,
+                    examples: [
+                        {
+                            id: 'c2_b1_ex1',
+                            text: '<strong>Ví dụ (Kỳ vọng):</strong> Một hộp có 8 bi xanh và 2 bi đỏ. Rút 1 bi, nếu đỏ được 6500đ, xanh phạt 1700đ. Trò chơi có công bằng?',
+                            stepByStep: `
+                                <p>X = {-1700, 6500}. P(đỏ)=0.2, P(xanh)=0.8.</p>
+                                <p><span class="math">E(X) = (-1700 &middot; 0.8) + (6500 &middot; 0.2) = -60 đ.</span></p>
+                                <p>E(X) < 0 &rarr; Người chơi lỗ, trò chơi không công bằng.</p>
+                            `,
+                            variations: [
+                                { q: 'Tung xúc xắc. Ra chẵn thưởng 3000đ, lẻ phạt 2000đ. Tính E(X)?', options: ['500đ', '1000đ', '-500đ', '0đ'], ansIndex: 0, hint: 'E(X) = 3000&middot;0.5 - 2000&middot;0.5 = 500.' },
+                                { q: 'X = {1, 2}, P = {0.3, 0.7}. E(X) = ?', options: ['1.7', '1.5', '1', '2'], ansIndex: 0, hint: '1&middot;0.3 + 2&middot;0.7 = 1.7.' }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'c2_b3',
+                    chapter: 'Chương 2',
+                    title: 'Các Quy Luật Phân Phối Đặc Biệt',
+                    theory: `
+                        <h3>1. Phân phối Nhị thức B(n, p)</h3>
+                        <p><span class="math">P(X=k) = C<sub>n</sub><sup>k</sup> &middot; p<sup>k</sup> &middot; q<sup>n-k</sup></span>. <span class="math">E(X) = n&middot;p, V(X) = n&middot;p&middot;q</span>.</p>
+                        
+                        <h3>2. Phân phối Poisson P(a)</h3>
+                        <p><span class="math">P(X=k) = (a<sup>k</sup> / k!) &middot; e<sup>-a</sup></span>. <span class="math">E(X) = a, V(X) = a</span>.</p>
+
+                        <h3>3. Phân phối Chuẩn N(&mu;, &sigma;<sup>2</sup>)</h3>
+                        <p><span class="math">P(a &le; X &le; b) = &phi;((b-&mu;)/&sigma;) - &phi;((a-&mu;)/&sigma;)</span></p>
+                    `,
+                    examples: [
+                        {
+                            id: 'c2_b3_ex1',
+                            text: '<strong>Ví dụ (Chuẩn):</strong> Chiều cao có quy luật chuẩn <span class="math">&mu; = 165, &sigma;<sup>2</sup> = 25 (&sigma; = 5)</span>. Tỷ lệ người cao từ 160cm đến 180cm.',
+                            stepByStep: `
+                                <p><span class="math">P(160 &le; X &le; 180) = &phi;((180-165)/5) - &phi;((160-165)/5)</span></p>
+                                <p><span class="math">= &phi;(3) - &phi;(-1) = &phi;(3) + &phi;(1)</span></p>
+                                <p>Tra bảng: 0.49865 + 0.3413 = 0.83995 (83.99%).</p>
+                            `,
+                            variations: [
+                                { q: 'Trọng lượng SP là N(100, 16) tức &sigma;=4. Tính tỷ lệ SP từ 96 đến 104.', options: ['68.26%', '95.44%', '99.73%', '34.13%'], ansIndex: 0, hint: '&phi;(1) - &phi;(-1) = 2&middot;0.3413 = 0.6826 = 68.26%.' }
+                            ]
+                        }
+                    ]
+                },
+
+                // =============== CHƯƠNG 3 ===============
+                {
+                    id: 'c3',
+                    chapter: 'Chương 3',
+                    title: 'Tổng thể và Mẫu',
+                    theory: `
+                        <h3>1. Các khái niệm</h3>
+                        <p>- <strong>Tổng thể:</strong> Kí hiệu tham số <span class="math">m, p, &sigma;<sup>2</sup></span>.</p>
+                        <p>- <strong>Mẫu:</strong> Kí hiệu tham số mẫu: <span class="math"><span style="text-decoration: overline;">x</span>, f, s<sup>2</sup></span>.</p>
+                        
+                        <h3>2. Công thức</h3>
+                        <div class="formula-box font-mono text-sm p-4 rounded-lg">
+                            <p><span style="text-decoration: overline;">x</span> = (1/n) &middot; &Sigma; x<sub>i</sub>&middot;n<sub>i</sub></p>
+                            <p>s<sup>2</sup> = [1/(n-1)] &middot; &Sigma; n<sub>i</sub>(x<sub>i</sub> - <span style="text-decoration: overline;">x</span>)<sup>2</sup></p>
+                        </div>
+                    `,
+                    examples: [
+                        {
+                            id: 'c3_ex1',
+                            text: '<strong>Ví dụ:</strong> Đo đường kính 100 chi tiết máy được trung bình mẫu là 20mm, độ lệch chuẩn mẫu s=2mm. Tính sai số ước lượng trung bình độ tin cậy 95% (Z=1.96).',
+                            stepByStep: `
+                                <p>Sử dụng công thức tính sai số <span class="math">&epsilon; = Z &middot; s / &radic;<span style="border-top: 1px solid;">n</span></span></p>
+                                <p><span class="math">&epsilon; = 1.96 &middot; 2 / &radic;<span style="border-top: 1px solid;">100</span> = 3.92 / 10 = 0.392</span></p>
+                            `,
+                            variations: [
+                                { q: 'Cho s=3, n=81, Z=2. Tính &epsilon;?', options: ['0.667', '2', '0.074', '6'], ansIndex: 0, hint: '&epsilon; = 2 &middot; 3 / 9 = 6/9 = 2/3 &approx; 0.667.' }
+                            ]
+                        }
+                    ]
+                },
+
+                // =============== CHƯƠNG 4 ===============
+                {
+                    id: 'c4_b1',
+                    chapter: 'Chương 4',
+                    title: 'Ước lượng Tham số',
+                    theory: `
+                        <h3>1. Ước lượng Tỷ lệ (p)</h3>
+                        <p>Khoảng ước lượng: <span class="math">(f - &epsilon;, f + &epsilon;)</span></p>
+                        <p>Sai số: <span class="math">&epsilon; = Z<sub>&alpha;/2</sub> &middot; &radic;<span style="border-top: 1px solid;">f(1-f)/n</span></span></p>
+                        
+                        <h3>2. Ước lượng Trung bình (m)</h3>
+                        <p>Khoảng ước lượng: <span class="math">(<span style="text-decoration: overline;">x</span> - &epsilon;, <span style="text-decoration: overline;">x</span> + &epsilon;)</span></p>
+                        <p>Sai số (n &ge; 30): <span class="math">&epsilon; = Z<sub>&alpha;/2</sub> &middot; s/&radic;<span style="border-top: 1px solid;">n</span></span></p>
+                    `,
+                    examples: [
+                        {
+                            id: 'c4_ex1',
+                            text: '<strong>Ví dụ (Tỷ lệ):</strong> Kiểm tra 300 em bé thấy 180 em suy dinh dưỡng. Ước lượng tỷ lệ SDD với độ tin cậy 95% (Z=1.96).',
+                            stepByStep: `
+                                <p>n = 300, f = 180/300 = 0.6.</p>
+                                <p><span class="math">&epsilon; = 1.96 &middot; &radic;<span style="border-top: 1px solid;">0.6 &middot; 0.4 / 300</span> &approx; 0.0554</span></p>
+                                <p>Khoảng: (0.6 - 0.0554, 0.6 + 0.0554) = (0.5446, 0.6554).</p>
+                            `,
+                            variations: [
+                                { q: 'Kiểm tra 100 sp thấy 10 phế phẩm. Tính &epsilon; (Z=1.96).', options: ['0.0588', '0.0196', '0.0300', '0.0900'], ansIndex: 0, hint: 'f=0.1. &epsilon; = 1.96&middot;&radic;<span style="border-top: 1px solid;">0.09/100</span> = 1.96&middot;0.03 = 0.0588.' }
+                            ]
+                        }
+                    ]
+                },
+
+                // =============== CHƯƠNG 5 ===============
+                {
+                    id: 'c5',
+                    chapter: 'Chương 5',
+                    title: 'Kiểm định Giả thiết Thống kê',
+                    theory: `
+                        <h3>1. Bài toán kiểm định</h3>
+                        <p><strong>Bước 1:</strong> Đặt H (dấu =) và H<sub>1</sub> (>, <, &ne;).</p>
+                        <p><strong>Bước 2:</strong> Tìm miền bác bỏ W<sub>&alpha;</sub>.</p>
+                        <p><strong>Bước 3:</strong> Tính U<sub>qs</sub>.</p>
+                        <p><strong>Bước 4:</strong> U<sub>qs</sub> &in; W<sub>&alpha;</sub> &rarr; Bác bỏ H.</p>
+                    `,
+                    examples: [
+                        {
+                            id: 'c5_ex1',
+                            text: '<strong>Ví dụ:</strong> H: p = 0.2, H<sub>1</sub>: p < 0.2. Với mức ý nghĩa 5%, W<sub>&alpha;</sub> = (-&infin;, -1.645). Mẫu có n=200, f=0.15. Tính U<sub>qs</sub> và kết luận.',
+                            stepByStep: `
+                                <p><span class="math">U<sub>qs</sub> = (0.15 - 0.20)&middot;&radic;<span style="border-top: 1px solid;">200</span> / &radic;<span style="border-top: 1px solid;">0.2&middot;0.8</span> &approx; -1.767</span></p>
+                                <p>-1.767 &in; (-&infin;, -1.645) &rarr; Bác bỏ H.</p>
+                            `,
+                            variations: [
+                                { q: 'Nếu tính ra U<sub>qs</sub> = -1.5, W<sub>&alpha;</sub> = (-&infin;, -1.645). Kết luận?', options: ['Bác bỏ H', 'Chấp nhận H', 'Tính sai', 'Lấy thêm mẫu'], ansIndex: 1, hint: '-1.5 không thuộc miền bác bỏ &rarr; Chấp nhận H.' }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            
+            // ====================== NGÂN HÀNG ĐỀ THI ======================
+            exams: {
+                midterm: [
+                    {
+                        title: "Đề thi Giữa kỳ - Bộ 01", subtitle: "Trọng số 30% - Chương 1 (Xác suất cơ bản)", maxScore: 2.0,
+                        questions: [
+                            {q:"Gieo 1 xúc xắc cân đối. Gọi A là biến cố xuất hiện mặt chẵn. P(A) bằng:",options:["1/6","1/2","1/3","1"],ans:1,exp:"Mặt chẵn {2, 4, 6}. P(A) = 3/6 = 1/2."},
+                            {q:"Một hộp có 5 bi xanh, 3 bi đỏ. Lấy ngẫu nhiên 2 bi. Xác suất để được 2 bi xanh?",options:["5/14","10/28","15/28","3/8"],ans:0,exp:"C<sub>5</sub><sup>2</sup> / C<sub>8</sub><sup>2</sup> = 10/28 = 5/14."},
+                            {q:"A và B độc lập, P(A)=0.4, P(B)=0.5. Tính P(A&middot;B).",options:["0.9","0.1","0.2","0.45"],ans:2,exp:"Độc lập: P(A&middot;B) = P(A)&middot;P(B) = 0.4 &middot; 0.5 = 0.2."},
+                            {q:"Có 4 nam, 3 nữ xếp thành 1 hàng ngang. Có bao nhiêu cách xếp?",options:["12","7","5040","144"],ans:2,exp:"Hoán vị 7 người: P<sub>7</sub> = 7! = 5040."},
+                            {q:"Cho P(A)=0.6, P(B)=0.7, P(A&middot;B)=0.4. Tính P(A+B).",options:["1.3","0.9","0.42","0.3"],ans:1,exp:"P(A+B) = P(A) + P(B) - P(A&middot;B) = 0.6 + 0.7 - 0.4 = 0.9."},
+                            {q:"Biến cố chắc chắn có xác suất bằng bao nhiêu?",options:["0","0.5","1","-1"],ans:2,exp:"P(&Omega;) = 1."},
+                            {q:"Máy I sx 40% sp (1% phế phẩm), Máy II sx 60% sp (2% phế phẩm). Chọn 1 sp. XS là phế phẩm?",options:["0.016","0.03","0.015","0.012"],ans:0,exp:"0.4&middot;0.01 + 0.6&middot;0.02 = 0.016."},
+                            {q:"Định lý Bayes dùng để tính:",options:["XS đầy đủ","XS hậu nghiệm P(A|B)","Kỳ vọng","Phương sai"],ans:1,exp:"Dùng để tính lại xác suất nguyên nhân."},
+                            {q:"Có 3 áo, 4 quần. Có bao nhiêu cách phối 1 bộ?",options:["7","12","14","18"],ans:1,exp:"Quy tắc nhân: 3 &middot; 4 = 12."},
+                            {q:"Tung 2 đồng xu. Xác suất để có đúng 1 mặt ngửa?",options:["1/4","1/2","3/4","1"],ans:1,exp:"{SN, NS} trong 4 TH. P = 2/4 = 1/2."},
+                            {q:"Một nhóm có 3 nam, 2 nữ. Chọn ra 1 lớp trưởng và 1 bí thư. Số cách?",options:["10","20","5","120"],ans:1,exp:"A<sub>5</sub><sup>2</sup> = 20."},
+                            {q:"P(A) + P(<span style='text-decoration: overline;'>A</span>) = ?",options:["0","1","0.5","-1"],ans:1,exp:"Tổng xác suất của biến cố và biến cố đối bằng 1."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Giữa kỳ - Bộ 02", subtitle: "Trọng số 30% - Chương 1 (Xác suất cơ bản)", maxScore: 2.0,
+                        questions: [
+                            {q:"A, B xung khắc. Khẳng định nào đúng?",options:["P(A&middot;B) = 0","P(A+B) = 1","P(A) = P(B)","P(A|B) = P(A)"],ans:0,exp:"Xung khắc thì P(A&middot;B) = 0."},
+                            {q:"Gieo 2 con xúc xắc. XS tổng số chấm bằng 4?",options:["1/12","1/36","3/36","1/6"],ans:2,exp:"(1,3), (3,1), (2,2). P = 3/36."},
+                            {q:"P(A)=0.3, P(B)=0.6, độc lập. Tính P(<span style='text-decoration: overline;'>A</span>&middot;B).",options:["0.42","0.18","0.7","0.4"],ans:0,exp:"P(<span style='text-decoration: overline;'>A</span>&middot;B) = P(<span style='text-decoration: overline;'>A</span>)&middot;P(B) = 0.7 &middot; 0.6 = 0.42."},
+                            {q:"Lớp có 40 SV, 15 Nữ. Chọn 1 lớp trưởng. XS là Nữ?",options:["15/40","25/40","1/40","1/15"],ans:0,exp:"15/40."},
+                            {q:"Công thức P(A|B) là:",options:["P(A&middot;B)/P(A)","P(A&middot;B)/P(B)","P(A)+P(B)","P(A)/P(B)"],ans:1,exp:"Định nghĩa xác suất có điều kiện."},
+                            {q:"Phép thử là gì?",options:["Là biến cố","Hành động không biết trước kết quả","Kết quả chắc chắn","Kỳ vọng"],ans:1,exp:"Định nghĩa."},
+                            {q:"Có 4 người lên 3 toa tàu. Số cách xếp?",options:["4<sup>3</sup>","3<sup>4</sup>","12","81"],ans:1,exp:"3<sup>4</sup> = 81."},
+                            {q:"XS máy 1 hỏng là 0.1, máy 2 hỏng là 0.2 (độc lập). XS cả 2 cùng hỏng?",options:["0.3","0.02","0.2","0.1"],ans:1,exp:"0.1 &middot; 0.2 = 0.02."},
+                            {q:"P(A+B) = ?",options:["P(A)+P(B)-P(A&middot;B)","P(A)&middot;P(B)","P(A)-P(B)","1-P(A&middot;B)"],ans:0,exp:"Công thức cộng."},
+                            {q:"P(A)=0.5, P(A+B)=0.8, A, B độc lập. Tính P(B).",options:["0.3","0.6","0.4","0.8"],ans:1,exp:"0.8 = 0.5 + P(B) - 0.5&middot;P(B) &rarr; 0.5P(B) = 0.3 &rarr; P(B) = 0.6."},
+                            {q:"Trong 10 sp có 2 phế phẩm. Lấy ngẫu nhiên 2 sp. XS lấy được 2 sp tốt?",options:["28/45","1/45","8/45","16/45"],ans:0,exp:"C<sub>8</sub><sup>2</sup> / C<sub>10</sub><sup>2</sup> = 28 / 45."},
+                            {q:"Hệ 2 biến cố A, B là đầy đủ nếu:",options:["P(A)+P(B)=1","P(A)=P(B)","A, B độc lập và xung khắc","A+B=&Omega; và A&middot;B=&empty;"],ans:3,exp:"Hệ đầy đủ khi tổng là &Omega; và xung khắc."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Giữa kỳ - Bộ 03", subtitle: "Trọng số 30% - Chương 1 (Xác suất cơ bản)", maxScore: 2.0,
+                        questions: [
+                            {q:"Có 10 câu hỏi, hs bốc ngẫu nhiên 3 câu. Số cách bốc?",options:["C<sub>10</sub><sup>3</sup>","A<sub>10</sub><sup>3</sup>","10!","3<sup>10</sup>"],ans:0,exp:"Không phân biệt thứ tự: C<sub>10</sub><sup>3</sup>."},
+                            {q:"Gieo 1 xúc xắc 2 lần. XS tổng số chấm bằng 2?",options:["1/36","2/36","0","1/6"],ans:0,exp:"Chỉ có (1,1). P = 1/36."},
+                            {q:"Hộp có 6 bi đen, 4 bi trắng. Lấy 1 bi, XS bi đen?",options:["0.4","0.6","1","0"],ans:1,exp:"6/10 = 0.6."},
+                            {q:"Biến cố không thể kí hiệu là?",options:["&Omega;","&empty;","A","P"],ans:1,exp:"&empty;"},
+                            {q:"Hai người bắn. P(trúng)=0.7 và 0.8. XS ít nhất 1 người trúng?",options:["0.94","0.56","0.24","1.5"],ans:0,exp:"1 - (0.3&middot;0.2) = 0.94."},
+                            {q:"Cho P(A|B)=0.4, P(B)=0.5. Tính P(A&middot;B).",options:["0.9","0.2","0.8","0.1"],ans:1,exp:"P(A&middot;B) = P(A|B)&middot;P(B) = 0.4 &middot; 0.5 = 0.2."},
+                            {q:"Rút 1 lá bài từ bộ 52. XS rút được lá Cơ?",options:["1/4","1/13","1/52","12/52"],ans:0,exp:"13/52 = 1/4."},
+                            {q:"Định lý XS đầy đủ áp dụng cho?",options:["Hệ biến cố bất kỳ","Hệ biến cố đầy đủ","Biến cố xung khắc","Biến cố độc lập"],ans:1,exp:"Hệ biến cố đầy đủ."},
+                            {q:"Chọn ngẫu nhiên 1 số từ 1 đến 10. XS chọn được số nguyên tố?",options:["0.3","0.4","0.5","0.2"],ans:1,exp:"Nguyên tố: 2, 3, 5, 7. P = 4/10 = 0.4."},
+                            {q:"Hai biến cố A, B độc lập thì P(B|A) bằng:",options:["P(A)","P(B)","P(A&middot;B)","0"],ans:1,exp:"P(B|A) = P(B) do độc lập."},
+                            {q:"Mật khẩu có 3 chữ số (từ 0-9). Số mật khẩu có thể tạo?",options:["1000","729","900","30"],ans:0,exp:"10 &middot; 10 &middot; 10 = 1000."},
+                            {q:"Hộp có 4 đỏ, 6 trắng. Lấy 3 bi. XS được 3 trắng?",options:["1/6","1/20","1/10","1/30"],ans:0,exp:"C<sub>6</sub><sup>3</sup> / C<sub>10</sub><sup>3</sup> = 20 / 120 = 1/6."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Giữa kỳ - Bộ 04", subtitle: "Trọng số 30% - Chương 1 (Xác suất cơ bản)", maxScore: 2.0,
+                        questions: [
+                            {q:"P(A)=0.8, P(B)=0.6, A và B độc lập. Tính XS cả 2 không xảy ra.",options:["0.48","0.08","0.92","0.52"],ans:1,exp:"P(<span style='text-decoration: overline;'>A</span>&middot;<span style='text-decoration: overline;'>B</span>) = 0.2 &middot; 0.4 = 0.08."},
+                            {q:"P(A)=0.5, P(A&middot;B)=0.2. Tính P(B|A).",options:["0.4","0.1","0.3","0.7"],ans:0,exp:"P(B|A) = 0.2 / 0.5 = 0.4."},
+                            {q:"Gieo 1 xúc xắc. XS mặt xuất hiện > 4?",options:["1/2","1/3","1/6","2/3"],ans:1,exp:"Mặt 5, 6. P = 2/6 = 1/3."},
+                            {q:"Cơ cấu lớp: 20 Nam, 30 Nữ. Chọn 1 người. XS là Nam?",options:["2/5","3/5","2/3","1/2"],ans:0,exp:"20/50 = 2/5."},
+                            {q:"Có 5 sách Toán, 3 sách Lý. Chọn 1 Toán VÀ 1 Lý. Số cách?",options:["8","15","120","2"],ans:1,exp:"5 &middot; 3 = 15."},
+                            {q:"XS chữa khỏi bệnh là 0.9. Chọn 3 người bệnh. XS cả 3 khỏi?",options:["0.9","2.7","0.729","0.001"],ans:2,exp:"0.9<sup>3</sup> = 0.729."},
+                            {q:"Biến cố A+B nghĩa là:",options:["A và B cùng xảy ra","Ít nhất A hoặc B xảy ra","A xảy ra B không","Không xảy ra A, B"],ans:1,exp:"Tổng 2 biến cố."},
+                            {q:"Rút 1 bài từ bộ 52. XS rút được lá Át?",options:["1/13","1/4","4/13","1/52"],ans:0,exp:"4/52 = 1/13."},
+                            {q:"Hộp có 10 thẻ (1-10). Lấy 1 thẻ, XS thẻ lẻ?",options:["0.5","0.4","0.6","0.2"],ans:0,exp:"5/10 = 0.5."},
+                            {q:"Tung 3 đồng xu. XS cả 3 cùng sấp?",options:["1/8","3/8","1/4","1/2"],ans:0,exp:"1/2 &middot; 1/2 &middot; 1/2 = 1/8."},
+                            {q:"Có 6 hs xếp thành vòng tròn. Số cách xếp?",options:["720","120","6","36"],ans:1,exp:"(6-1)! = 5! = 120."},
+                            {q:"Cho P(A|B)=0.5, P(A)=0.5. Kết luận gì?",options:["A, B xung khắc","A, B độc lập","A = B","B &sub; A"],ans:1,exp:"P(A|B) = P(A) &rarr; Độc lập."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Giữa kỳ - Bộ 05", subtitle: "Trọng số 30% - Chương 1 (Xác suất cơ bản)", maxScore: 2.0,
+                        questions: [
+                            {q:"Một người có 3 chìa khóa, 1 chìa mở được. Thử ngẫu nhiên không hoàn lại. XS mở được ở lần 2?",options:["1/3","1/6","1/2","2/3"],ans:0,exp:"Lần 1 sai (2/3) &middot; Lần 2 đúng (1/2) = 1/3."},
+                            {q:"Quy tắc cộng P(A+B) = P(A)+P(B) áp dụng khi:",options:["A, B độc lập","A, B xung khắc","A, B đối lập","A, B bất kỳ"],ans:1,exp:"Chỉ khi A, B xung khắc."},
+                            {q:"P(A)=0.7, P(B)=0.2, xung khắc. Tính P(A+B).",options:["0.9","0.14","0.5","0.76"],ans:0,exp:"0.7 + 0.2 = 0.9."},
+                            {q:"Định nghĩa XS cổ điển P(A) = m/M. M là gì?",options:["Số phần tử biến cố A","Số kết quả thuận lợi","Số kết quả đồng khả năng","Tập hợp rỗng"],ans:2,exp:"M là tổng số kết quả đồng khả năng."},
+                            {q:"Tỉ lệ phế phẩm máy I là 5%, máy II là 10%. Chọn 1 máy (xs 0.5), lấy 1 sp. XS phế phẩm?",options:["0.075","0.15","0.05","0.1"],ans:0,exp:"0.5&middot;0.05 + 0.5&middot;0.1 = 0.075."},
+                            {q:"Rút ngẫu nhiên 1 lá bài từ 52 lá. XS rút lá Át hoặc K?",options:["2/13","1/13","4/13","8/13"],ans:0,exp:"(4+4)/52 = 8/52 = 2/13."},
+                            {q:"Sắp xếp 5 cuốn sách khác nhau lên kệ. Số cách?",options:["25","120","5","10"],ans:1,exp:"5! = 120."},
+                            {q:"Một nhóm 5 nam, 5 nữ. Chọn 3 người, XS được 2 nam 1 nữ?",options:["1/2","5/12","1/4","2/5"],ans:1,exp:"[C<sub>5</sub><sup>2</sup> &middot; C<sub>5</sub><sup>1</sup>] / C<sub>10</sub><sup>3</sup> = 50 / 120 = 5/12."},
+                            {q:"Rút 2 lá bài (ko hoàn lại). XS lá đầu là Át, lá 2 là K?",options:["16/2652","1/169","16/2704","4/51"],ans:0,exp:"4/52 &middot; 4/51 = 16/2652."},
+                            {q:"Nếu P(A)=1 thì A là:",options:["BC không thể","BC chắc chắn","BC độc lập","BC xung khắc"],ans:1,exp:"Biến cố chắc chắn có P = 1."},
+                            {q:"A và B là hai biến cố độc lập, P(A)=0.4, P(B)=0.5. Tính P(A&middot;B).",options:["0.9","0.1","0.2","0.45"],ans:2,exp:"0.4 &middot; 0.5 = 0.2."},
+                            {q:"Gieo 1 xúc xắc cân đối. Gọi A là biến cố xuất hiện mặt chẵn. P(A) bằng:",options:["1/6","1/2","1/3","1"],ans:1,exp:"3/6 = 1/2."}
+                        ]
+                    }],
+                final: [
+                    {
+                        title: "Đề thi Cuối kỳ - Bộ 01", subtitle: "Trọng số 50% - Chương 2, 3, 4, 5", maxScore: 9.0,
+                        questions: [
+                            {q:"[Ch2] Biến ngẫu nhiên X={0, 1}, P={0.4, 0.6}. E(X)=?",options:["0.6","0.4","1","0.24"],ans:0,exp:"E(X) = 0&middot;0.4 + 1&middot;0.6 = 0.6."},
+                            {q:"[Ch2] X ~ B(10, 0.2). Phương sai V(X)=?",options:["1.6","2","8","0.8"],ans:0,exp:"V(X) = n&middot;p&middot;q = 10 &middot; 0.2 &middot; 0.8 = 1.6."},
+                            {q:"[Ch2] Phân phối Poisson P(a) có tính chất:",options:["E(X) = V(X) = a","E(X) > V(X)","E(X) < V(X)","E(X) = a<sup>2</sup>"],ans:0,exp:"Kỳ vọng bằng Phương sai bằng a."},
+                            {q:"[Ch2] Đồ thị hàm mật độ N(&mu;, &sigma;<sup>2</sup>) đối xứng qua:",options:["x = &mu;","x = &sigma;","x = 0","Trục hoành"],ans:0,exp:"Đối xứng qua &mu;."},
+                            {q:"[Ch2] X ~ N(0, 1). P(X < 0) = ?",options:["0.5","1","0","0.95"],ans:0,exp:"Đối xứng qua 0, nên P(X<0) = 0.5."},
+                            {q:"[Ch3] <span style='text-decoration: overline;'>x</span> dùng để ước lượng cho tham số nào?",options:["Trung bình &mu;","Phương sai &sigma;<sup>2</sup>","Tỷ lệ p","Z"],ans:0,exp:"Trung bình mẫu ước lượng cho trung bình tổng thể."},
+                            {q:"[Ch4] n=100, <span style='text-decoration: overline;'>x</span>=20, s=2, Z=1.96. Sai số &epsilon;=?",options:["0.392","0.196","0.039","3.92"],ans:0,exp:"&epsilon; = 1.96 &middot; 2 / 10 = 0.392."},
+                            {q:"[Ch4] Công thức sai số ước lượng tỷ lệ là:",options:["&epsilon; = Z<sub>&alpha;/2</sub> &middot; &radic;<span style='border-top: 1px solid;'>f(1-f)/n</span>","&epsilon; = Z<sub>&alpha;/2</sub> &middot; s/&radic;<span style='border-top: 1px solid;'>n</span>","&epsilon; = t<sub>&alpha;/2</sub> &middot; s/&radic;<span style='border-top: 1px solid;'>n</span>","&epsilon; = p(1-p)/n"],ans:0,exp:"Chuẩn."},
+                            {q:"[Ch4] n < 30, chưa biết &sigma;<sup>2</sup>. Dùng phân phối nào?",options:["Student t(n-1)","Chuẩn N(0,1)","Poisson","Khi bình phương"],ans:0,exp:"Student t."},
+                            {q:"[Ch4] Để giảm sai số &epsilon;, ta nên:",options:["Tăng n","Giảm n","Tăng độ tin cậy","Giảm trung bình"],ans:0,exp:"&epsilon; tỷ lệ nghịch với căn n."},
+                            {q:"[Ch4] Độ tin cậy 95% &rarr; Z<sub>&alpha;/2</sub> = ?",options:["1.96","1.645","2.58","1.28"],ans:0,exp:"Chuẩn Z(0.025) = 1.96."},
+                            {q:"[Ch4] n=200, 20 phế phẩm. f = ?",options:["0.1","0.2","0.05","0.01"],ans:0,exp:"20/200 = 0.1."},
+                            {q:"[Ch5] Sai lầm loại 1 là gì?",options:["Bác bỏ H khi H đúng","Chấp nhận H khi H sai","Bác bỏ H khi H sai","Chấp nhận H khi H đúng"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch5] H<sub>1</sub>: m > m<sub>0</sub>. W<sub>&alpha;</sub> nằm ở?",options:["Bên phải","Bên trái","Hai bên","Ở giữa"],ans:0,exp:"Dấu > &rarr; bên phải."},
+                            {q:"[Ch5] Tiêu chuẩn kiểm định độc lập 2 dấu hiệu?",options:["&chi;<sup>2</sup>","Student (t)","Fisher (F)","Chuẩn (Z)"],ans:0,exp:"Khi bình phương &chi;<sup>2</sup>."},
+                            {q:"[Ch5] U<sub>qs</sub> lọt vào W<sub>&alpha;</sub>. Quyết định?",options:["Bác bỏ H","Chấp nhận H","Chưa đủ cơ sở","Kiểm tra lại"],ans:0,exp:"Lọt vào miền bác bỏ &rarr; Bác bỏ H."},
+                            {q:"[Ch5] KĐ tỷ lệ p = p<sub>0</sub>, U<sub>qs</sub> = ?",options:["(f - p<sub>0</sub>)&radic;<span style='border-top: 1px solid;'>n</span> / &radic;<span style='border-top: 1px solid;'>p<sub>0</sub>(1-p<sub>0</sub>)</span>","(f - p<sub>0</sub>)/n","(<span style='text-decoration: overline;'>x</span> - &mu;)/s","(<span style='text-decoration: overline;'>x</span> - m<sub>0</sub>)&radic;<span style='border-top: 1px solid;'>n</span> / s"],ans:0,exp:"Chuẩn."},
+                            {q:"[Ch2] X ~ N(100, 25). Độ lệch chuẩn &sigma;=?",options:["5","25","100","10"],ans:0,exp:"&sigma; = &radic;<span style='border-top: 1px solid;'>25</span> = 5."},
+                            {q:"[Ch2] Chiều cao SV là biến ngẫu nhiên loại:",options:["Liên tục","Rời rạc","Định tính","Nhị thức"],ans:0,exp:"Đo đạc &rarr; Liên tục."},
+                            {q:"[Ch2] E(X)=5, tính E(2X+3)=?",options:["13","10","8","5"],ans:0,exp:"2(5)+3=13."},
+                            {q:"[Ch3] Mẫu lấy từ tổng thể N phần tử. Tỉ lệ n/N là?",options:["Tỉ lệ chọn mẫu","Trung bình mẫu","Phương sai","Sai số"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch4] Sai số &epsilon;=2. Tăng mẫu n lên 4 lần, &epsilon; mới = ?",options:["1","4","2","0.5"],ans:0,exp:"Giảm &radic;<span style='border-top: 1px solid;'>4</span> = 2 lần &rarr; &epsilon;=1."},
+                            {q:"[Ch5] Bậc tự do &chi;<sup>2</sup> cho bảng h hàng, c cột?",options:["(h-1)(c-1)","hc","h+c","h/c"],ans:0,exp:"Chuẩn df."},
+                            {q:"[Ch5] KĐ H<sub>1</sub>: p<sub>1</sub> &ne; p<sub>2</sub> là kiểm định:",options:["Hai phía","Phía phải","Phía trái","Độc lập"],ans:0,exp:"&ne; là hai phía."},
+                            {q:"[Ch2] X ~ P(4). P(X=0) = ?",options:["e<sup>-4</sup>","4e<sup>-4</sup>","1","0"],ans:0,exp:"(4<sup>0</sup>/0!)e<sup>-4</sup> = e<sup>-4</sup>."},
+                            {q:"[Ch3] KĐ m=20, <span style='text-decoration: overline;'>x</span>=22, s=5, n=100. U<sub>qs</sub>=?",options:["4.0","0.4","2.0","1.5"],ans:0,exp:"(22-20)&middot;10/5 = 4."},
+                            {q:"[Ch4] Độ tin cậy càng cao thì khoảng tin cậy:",options:["Càng lớn","Càng nhỏ","Không đổi","Bằng 0"],ans:0,exp:"Z lớn &rarr; &epsilon; lớn."},
+                            {q:"[Ch5] U<sub>qs</sub>=2.5, W<sub>&alpha;</sub>=(1.96, +&infin;). KL:",options:["Bác bỏ H","Chấp nhận H","Thiếu dữ kiện","Sai số"],ans:0,exp:"2.5 &in; W &rarr; Bác bỏ H."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Cuối kỳ - Bộ 02", subtitle: "Trọng số 50% - Chương 2, 3, 4, 5", maxScore: 9.0,
+                        questions: [
+                            {q:"[Ch2] X ~ B(20, 0.5). E(X) = ?",options:["10","5","20","0.5"],ans:0,exp:"E(X) = np = 10."},
+                            {q:"[Ch2] V(C) (C là hằng số) bằng:",options:["0","C","1","-1"],ans:0,exp:"Hằng số không phân tán."},
+                            {q:"[Ch2] X ~ N(50, 16). Mod(X) = ?",options:["50","16","4","0"],ans:0,exp:"Mod = &mu; = 50."},
+                            {q:"[Ch2] &phi;(0) của hàm Laplace bằng:",options:["0","0.5","1","-0.5"],ans:0,exp:"Chuẩn."},
+                            {q:"[Ch2] Bảng phân phối xác suất luôn thỏa:",options:["&Sigma;p<sub>i</sub> = 1","p<sub>i</sub> < 0","&Sigma;x<sub>i</sub> = 1","E(X) = 1"],ans:0,exp:"Tổng XS bằng 1."},
+                            {q:"[Ch3] s=3 &rarr; Phương sai s<sup>2</sup> = ?",options:["9","3","8.1","6"],ans:0,exp:"3<sup>2</sup> = 9."},
+                            {q:"[Ch3] f=0.2, n=400. Số phần tử m = ?",options:["80","20","400","0.2"],ans:0,exp:"m = f&middot;n = 80."},
+                            {q:"[Ch4] Khoảng tin cậy giảm 2 lần, n phải:",options:["Tăng 4 lần","Tăng 2 lần","Tăng 8 lần","Tăng 16 lần"],ans:0,exp:"&radic;<span style='border-top: 1px solid;'>4</span> = 2."},
+                            {q:"[Ch4] Công thức &epsilon; = Z &middot; &sigma;/&radic;<span style='border-top: 1px solid;'>n</span> dùng khi:",options:["Đã biết &sigma;<sup>2</sup>","Chưa biết &sigma;<sup>2</sup>","n < 30","Bất kì"],ans:0,exp:"Có &sigma; &rarr; Đã biết."},
+                            {q:"[Ch4] Ước lượng điểm p là:",options:["f","<span style='text-decoration: overline;'>x</span>","s<sup>2</sup>","&sigma;"],ans:0,exp:"Tỷ lệ mẫu f."},
+                            {q:"[Ch4] &alpha; = 0.05. Độ tin cậy là:",options:["95%","5%","90%","100%"],ans:0,exp:"1 - &alpha; = 0.95."},
+                            {q:"[Ch5] Giả thiết H luôn mang dấu:",options:["Dấu =","Dấu >","Dấu <","Dấu &ne;"],ans:0,exp:"Luôn chứa dấu bằng."},
+                            {q:"[Ch5] U<sub>qs</sub>=-2.1, W<sub>&alpha;</sub>=(-&infin;, -1.645). KL:",options:["Bác bỏ H","Chấp nhận H","Không KL","U sai"],ans:0,exp:"-2.1 lọt vào W &rarr; Bác bỏ."},
+                            {q:"[Ch5] So sánh 2 TB (n &ge; 30), tiêu chuẩn là:",options:["U (Chuẩn)","&chi;<sup>2</sup>","F","T"],ans:0,exp:"Mẫu lớn dùng U."},
+                            {q:"[Ch5] Sai lầm loại 2 là:",options:["Chấp nhận H sai","Bác bỏ H đúng","Chấp nhận H đúng","Bác bỏ H sai"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch2] Số KH vào cửa hàng theo phân phối:",options:["Poisson","Chuẩn","Student","Fisher"],ans:0,exp:"Đếm sự kiện trong tgian."},
+                            {q:"[Ch2] X ~ B(n, p). Điều kiện p:",options:["0 &le; p &le; 1","p > 1","p < 0","p &ne; 0"],ans:0,exp:"XS phải từ 0 đến 1."},
+                            {q:"[Ch2] E(X)=2, V(X)=3. E(X<sup>2</sup>)=?",options:["7","5","1","9"],ans:0,exp:"3 = E(X<sup>2</sup>) - 4 &rarr; 7."},
+                            {q:"[Ch3] Mẫu lấy có hoàn lại thì X<sub>i</sub>:",options:["Độc lập","Phụ thuộc","Bằng nhau","Xung khắc"],ans:0,exp:"Độc lập."},
+                            {q:"[Ch3] Kích thước mẫu n là:",options:["Số phần tử quan sát","Tổng x<sub>i</sub>","<span style='text-decoration: overline;'>x</span>","s<sup>2</sup>"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch4] Khoảng tin cậy (10.5, 12.5). <span style='text-decoration: overline;'>x</span>=?",options:["11.5","11","12","23"],ans:0,exp:"Trung điểm = 11.5."},
+                            {q:"[Ch4] Ước lượng tỷ lệ, &epsilon; max khi f=?",options:["0.5","1","0","0.1"],ans:0,exp:"f(1-f) max khi f=0.5."},
+                            {q:"[Ch5] KĐ độc lập: &chi;<sup>2</sup><sub>qs</sub> > &chi;<sup>2</sup><sub>&alpha;</sub> &rarr; ?",options:["Phụ thuộc","Độc lập","Bác bỏ H1","Không KL"],ans:0,exp:"Bác bỏ H(độc lập) &rarr; Phụ thuộc."},
+                            {q:"[Ch5] H<sub>1</sub>: m &ne; 10 là KĐ:",options:["Hai phía","Một phía phải","Một phía trái","Không phải"],ans:0,exp:"&ne; là hai phía."},
+                            {q:"[Ch2] &phi;(-u) = ?",options:["-&phi;(u)","&phi;(u)","1-&phi;(u)","0"],ans:0,exp:"Hàm Laplace lẻ."},
+                            {q:"[Ch3] 40 phế phẩm / 400 sp. f=?",options:["0.1","0.4","0.01","0.04"],ans:0,exp:"40/400 = 0.1."},
+                            {q:"[Ch4] Độ tin cậy 99% &rarr; Z = ?",options:["2.58","1.96","1.645","1.28"],ans:0,exp:"Chuẩn."},
+                            {q:"[Ch5] KĐ p=p<sub>0</sub>, tử số U<sub>qs</sub> là:",options:["f-p<sub>0</sub>","<span style='text-decoration: overline;'>x</span>-m<sub>0</sub>","f","p<sub>0</sub>"],ans:0,exp:"(f-p<sub>0</sub>)."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Cuối kỳ - Bộ 03", subtitle: "Trọng số 50% - Chương 2, 3, 4, 5", maxScore: 9.0,
+                        questions: [
+                            {q:"[Ch2] X ~ P(a). Công thức P(X=k):",options:["a<sup>k</sup>e<sup>-a</sup>/k!","C<sub>n</sub><sup>k</sup>p<sup>k</sup>q<sup>n-k</sup>","np","a/k!"],ans:0,exp:"Chuẩn."},
+                            {q:"[Ch2] Hàm mật độ f(x) thỏa:",options:["&int;f(x)dx=1","f(x)<0","&int;f(x)dx=0","f(x)=1"],ans:0,exp:"Tổng diện tích = 1."},
+                            {q:"[Ch2] E(3X-2) = ?",options:["3E(X)-2","3E(X)","E(X)-2","E(3X)"],ans:0,exp:"Tuyến tính."},
+                            {q:"[Ch2] X ~ N(&mu;, &sigma;<sup>2</sup>). P(X < &mu;) = ?",options:["0.5","1","0","0.95"],ans:0,exp:"Đối xứng."},
+                            {q:"[Ch2] V(aX+b) = ?",options:["a<sup>2</sup>V(X)","aV(X)+b","V(X)","a<sup>2</sup>V(X)+b"],ans:0,exp:"Phương sai của tổng."},
+                            {q:"[Ch3] Độ lệch chuẩn mẫu s là:",options:["&radic;<span style='border-top: 1px solid;'>s<sup>2</sup></span>","s<sup>2</sup>","s/n","(s<sup>2</sup>)<sup>2</sup>"],ans:0,exp:"Căn bậc hai phương sai."},
+                            {q:"[Ch3] Tổng tần số &Sigma;n<sub>i</sub> bằng:",options:["n","1","&Sigma;x<sub>i</sub>","0"],ans:0,exp:"Cỡ mẫu n."},
+                            {q:"[Ch4] &epsilon;=0.05, f=0.4. Khoảng tin cậy:",options:["(0.35, 0.45)","(0.4, 0.5)","(0.3, 0.4)","(0.45, 0.55)"],ans:0,exp:"0.4 &plusmn; 0.05."},
+                            {q:"[Ch4] Dùng t<sub>&alpha;/2</sub>(n-1) khi:",options:["n<30, &sigma; chưa biết","Biết &sigma;","n&ge;30","Bất kỳ"],ans:0,exp:"Mẫu nhỏ, chưa biết &sigma;."},
+                            {q:"[Ch4] Tham số nào tính từ Mẫu?",options:["<span style='text-decoration: overline;'>x</span>, f, s<sup>2</sup>","&mu;, p, &sigma;<sup>2</sup>","Z, t","&alpha;"],ans:0,exp:"Đại lượng mẫu."},
+                            {q:"[Ch4] Độ tin cậy 90% &rarr; &alpha;=?",options:["0.1","0.05","0.9","0.01"],ans:0,exp:"1 - 0.9 = 0.1."},
+                            {q:"[Ch5] H<sub>1</sub>: m < m<sub>0</sub>. W<sub>&alpha;</sub> nằm:",options:["Bên trái","Bên phải","Hai bên","Bất kì"],ans:0,exp:"Dấu < &rarr; trái."},
+                            {q:"[Ch5] P-value < &alpha; &rarr; ?",options:["Bác bỏ H","Chấp nhận H","Không KL","Tăng &alpha;"],ans:0,exp:"P-value nhỏ &rarr; Bác bỏ."},
+                            {q:"[Ch5] KĐ p, U<sub>qs</sub>=1.5, Z=1.645 (phải). KL:",options:["Chấp nhận H","Bác bỏ H","Sai lầm","Phụ thuộc"],ans:0,exp:"1.5 < 1.645 &rarr; Không lọt W."},
+                            {q:"[Ch5] Mức ý nghĩa &alpha; là xác suất của:",options:["Sai lầm loại 1","Sai lầm loại 2","Khoảng tin cậy","Độ chính xác"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch2] X: số ngửa khi tung 3 xu. Tập X?",options:["{0,1,2,3}","{1,2,3}","{0,1}","{0.5}"],ans:0,exp:"Từ 0 đến 3."},
+                            {q:"[Ch2] E(X)=10. E(2X)=?",options:["20","10","5","12"],ans:0,exp:"2 &middot; 10 = 20."},
+                            {q:"[Ch3] Mẫu là gì?",options:["Tập con của Tổng thể","Toàn bộ phần tử","Giá trị TB","Sai số"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch3] <span style='text-decoration: overline;'>x</span> dùng để:",options:["Ước lượng &mu;","Ước lượng &sigma;<sup>2</sup>","Ước lượng p","Tính xác suất"],ans:0,exp:"TB mẫu ước lượng TB tổng thể."},
+                            {q:"[Ch4] Sai số KĐ TB (n>30):",options:["Z &middot; s/&radic;<span style='border-top: 1px solid;'>n</span>","Z &middot; s","s/&radic;<span style='border-top: 1px solid;'>n</span>","t &middot; s/n"],ans:0,exp:"Chuẩn."},
+                            {q:"[Ch4] p = f &plusmn; &epsilon; là dạng của:",options:["Khoảng tin cậy tỷ lệ","KĐ tỷ lệ","Trung bình","Phương sai"],ans:0,exp:"Định dạng p."},
+                            {q:"[Ch5] Bác bỏ H khi U<sub>qs</sub>:",options:["Lọt vào W<sub>&alpha;</sub>","Lọt ngoài W<sub>&alpha;</sub>","Bằng 0","Nhỏ hơn 0"],ans:0,exp:"&in; W &rarr; Bác bỏ."},
+                            {q:"[Ch5] H<sub>1</sub>: p &ne; p<sub>0</sub> dùng phân vị:",options:["Z<sub>&alpha;/2</sub>","Z<sub>&alpha;</sub>","t<sub>&alpha;</sub>","&chi;<sup>2</sup>"],ans:0,exp:"Hai phía."},
+                            {q:"[Ch2] Mod(X) là:",options:["Có XS (hoặc f(x)) max","Trung bình","Phương sai","0"],ans:0,exp:"Giá trị có khả năng cao nhất."},
+                            {q:"[Ch3] Phương sai tổng thể:",options:["&sigma;<sup>2</sup>","s<sup>2</sup>","ŝ<sup>2</sup>","p"],ans:0,exp:"Kí hiệu."},
+                            {q:"[Ch4] Tăng n thì khoảng tin cậy:",options:["Hẹp lại","Rộng ra","Không đổi","Bằng 0"],ans:0,exp:"&epsilon; giảm."},
+                            {q:"[Ch5] KĐ &chi;<sup>2</sup>, H là:",options:["2 dấu hiệu độc lập","Phụ thuộc","TB bằng nhau","Tỷ lệ bằng nhau"],ans:0,exp:"Giả thiết H: độc lập."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Cuối kỳ - Bộ 04", subtitle: "Trọng số 50% - Chương 2, 3, 4, 5", maxScore: 9.0,
+                        questions: [
+                            {q:"[Ch2] X ~ P(2). E(X) + V(X) = ?",options:["4","2","0","8"],ans:0,exp:"2 + 2 = 4."},
+                            {q:"[Ch2] Tung xúc xắc. E(X) = ?",options:["3.5","3","4","6"],ans:0,exp:"21/6 = 3.5."},
+                            {q:"[Ch2] X ~ N(10, 4). Z = (X-10)/2 ~ ?",options:["N(0, 1)","N(10, 4)","P(4)","B(10, 2)"],ans:0,exp:"Chuẩn hóa."},
+                            {q:"[Ch2] Diện tích dưới đường cong f(x) N(&mu;, &sigma;<sup>2</sup>):",options:["1","0.5","0","&infin;"],ans:0,exp:"Tổng XS."},
+                            {q:"[Ch2] X, Y độc lập. V(X-Y) = ?",options:["V(X)+V(Y)","V(X)-V(Y)","0","1"],ans:0,exp:"V(X) + V(Y)."},
+                            {q:"[Ch3] s<sup>2</sup> là:",options:["Phương sai mẫu hiệu chỉnh","Chưa hiệu chỉnh","TB mẫu","Tỷ lệ mẫu"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch3] Tỷ lệ tổng thể ký hiệu:",options:["p","f","m","&mu;"],ans:0,exp:"Chuẩn."},
+                            {q:"[Ch4] Giảm độ tin cậy, &epsilon; sẽ:",options:["Giảm","Tăng","Không đổi","Bằng 0"],ans:0,exp:"Z giảm &rarr; &epsilon; giảm."},
+                            {q:"[Ch4] <span style='text-decoration: overline;'>x</span>=20, &epsilon;=1. Khoảng TB:",options:["(19, 21)","(20, 21)","(19, 20)","(21, 22)"],ans:0,exp:"20 &plusmn; 1."},
+                            {q:"[Ch4] Ước lượng p cần:",options:["f và n","<span style='text-decoration: overline;'>x</span> và s","s<sup>2</sup>","&sigma;"],ans:0,exp:"Thông số tỷ lệ mẫu."},
+                            {q:"[Ch5] Miền bác bỏ &chi;<sup>2</sup>:",options:["(&chi;<sup>2</sup><sub>&alpha;</sub>, +&infin;)","(-&infin;, -&chi;<sup>2</sup><sub>&alpha;</sub>)","(-&chi;<sup>2</sup><sub>&alpha;</sub>, &chi;<sup>2</sup><sub>&alpha;</sub>)","(0, 1)"],ans:0,exp:"Bên phải."},
+                            {q:"[Ch5] U<sub>qs</sub>=-1.9, W=(-&infin;, -1.645). KL:",options:["Bác bỏ H","Chấp nhận H","Không KL","U sai"],ans:0,exp:"Lọt W."},
+                            {q:"[Ch5] KĐ 2 tỷ lệ, nếu f<sub>1</sub>=f<sub>2</sub> thì U<sub>qs</sub>=?",options:["0","1","-1","&infin;"],ans:0,exp:"Tử số = 0."},
+                            {q:"[Ch5] Sai lầm loại 1:",options:["Bác bỏ H đúng","Chấp nhận H sai","Tính sai U","Mẫu nhỏ"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch2] Số phế phẩm là BNN:",options:["Rời rạc","Liên tục","Định tính","Không phải BNN"],ans:0,exp:"Đếm được."},
+                            {q:"[Ch2] P(a < X < b) của X liên tục:",options:["&int;<sub>a</sub><sup>b</sup> f(x)dx","f(b)-f(a)","f(a)-f(b)","0"],ans:0,exp:"Tích phân."},
+                            {q:"[Ch3] f = 12/60 = ?",options:["0.2","0.5","0.12","0.6"],ans:0,exp:"1/5 = 0.2."},
+                            {q:"[Ch3] n=10, df Student t = ?",options:["9","10","8","11"],ans:0,exp:"n-1 = 9."},
+                            {q:"[Ch4] Nếu &sigma; đã biết, dùng phân vị:",options:["Z","t","&chi;<sup>2</sup>","F"],ans:0,exp:"Chuẩn Z."},
+                            {q:"[Ch4] n=100, f=0.1. Tích f(1-f)/n = ?",options:["0.0009","0.09","0.009","0.9"],ans:0,exp:"0.09/100 = 0.0009."},
+                            {q:"[Ch5] H: m &ge; 10 &rarr; H<sub>1</sub>:",options:["m < 10","m = 10","m &ne; 10","m > 10"],ans:0,exp:"Phủ định."},
+                            {q:"[Ch5] KĐ TB, n=25, &sigma; chưa biết. Dùng:",options:["T<sub>qs</sub>","U<sub>qs</sub>","&chi;<sup>2</sup><sub>qs</sub>","F<sub>qs</sub>"],ans:0,exp:"Mẫu nhỏ &rarr; T."},
+                            {q:"[Ch2] P(&Omega;) = ?",options:["1","0","0.5","&infin;"],ans:0,exp:"Chắc chắn."},
+                            {q:"[Ch3] Tần số {5, 10, 5}. Cỡ mẫu n = ?",options:["20","3","10","6"],ans:0,exp:"5+10+5 = 20."},
+                            {q:"[Ch4] Ước lượng khoảng là tìm:",options:["Khoảng chứa tham số","<span style='text-decoration: overline;'>x</span>","s<sup>2</sup>","n"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch5] W<sub>&alpha;</sub> phụ thuộc:",options:["H<sub>1</sub> và &alpha;","H và &alpha;","<span style='text-decoration: overline;'>x</span>","n"],ans:0,exp:"Dấu của H1."}
+                        ]
+                    },
+                    {
+                        title: "Đề thi Cuối kỳ - Bộ 05", subtitle: "Trọng số 50% - Chương 2, 3, 4, 5", maxScore: 9.0,
+                        questions: [
+                            {q:"[Ch2] X ~ N(10, 16). &sigma; = ?",options:["4","16","10","256"],ans:0,exp:"&radic;<span style='border-top: 1px solid;'>16</span> = 4."},
+                            {q:"[Ch2] E(X+Y) = ?",options:["E(X)+E(Y)","E(X)E(Y)","0","1"],ans:0,exp:"Kỳ vọng tổng."},
+                            {q:"[Ch2] X ~ P(a). E(X) = ?",options:["a","a<sup>2</sup>","&radic;<span style='border-top: 1px solid;'>a</span>","1/a"],ans:0,exp:"Tính chất Poisson."},
+                            {q:"[Ch2] Hàm f(x) là mật độ nếu:",options:["f(x)&ge;0, &int;f(x)dx=1","f(x)&le;0","f(x)=1","&int;f(x)dx=0"],ans:0,exp:"2 đkiện."},
+                            {q:"[Ch2] Số hạt bụi là biến:",options:["Rời rạc","Liên tục","Chuẩn","Đều"],ans:0,exp:"Đếm được."},
+                            {q:"[Ch3] Từ tổng thể lấy n phần tử:",options:["Mẫu","Trung bình","Tỷ lệ","Phương sai"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch3] <span style='text-decoration: overline;'>x</span> của {2, 4, 6, 8}:",options:["5","4","6","20"],ans:0,exp:"20/4 = 5."},
+                            {q:"[Ch4] &epsilon; của m (n>30) phụ thuộc:",options:["Z, s, n","Chỉ n","Chỉ s","<span style='text-decoration: overline;'>x</span>"],ans:0,exp:"Công thức có cả 3."},
+                            {q:"[Ch4] &alpha; giảm &rarr; Độ tin cậy:",options:["Tăng","Giảm","Không đổi","Bằng 0"],ans:0,exp:"1 - &alpha; tăng."},
+                            {q:"[Ch4] (0.2, 0.4). Tỷ lệ f = ?",options:["0.3","0.2","0.4","0.6"],ans:0,exp:"Trung điểm 0.3."},
+                            {q:"[Ch4] &epsilon; giảm một nửa, n phải:",options:["Tăng 4 lần","Giảm 4 lần","Tăng 2 lần","Giảm 2 lần"],ans:0,exp:"&radic;<span style='border-top: 1px solid;'>4</span>=2."},
+                            {q:"[Ch5] &alpha; gọi là:",options:["Mức ý nghĩa","Độ tin cậy","Sai lầm 2","P-value"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch5] U=2.0, W=(1.645, +&infin;). KL:",options:["Bác bỏ H","Chấp nhận H","Không KL","Thêm mẫu"],ans:0,exp:"Lọt W."},
+                            {q:"[Ch5] H<sub>1</sub>: m &ne; m<sub>0</sub> là KĐ:",options:["Hai phía","Một phía phải","Một phía trái","Độc lập"],ans:0,exp:"Khác &rarr; hai phía."},
+                            {q:"[Ch5] df &chi;<sup>2</sup> bảng 3x3:",options:["4","9","6","8"],ans:0,exp:"(3-1)(3-1) = 4."},
+                            {q:"[Ch2] X ~ B(10, 0.4). E(X) = ?",options:["4","6","2.4","10"],ans:0,exp:"10 &middot; 0.4 = 4."},
+                            {q:"[Ch2] N(&mu;, &sigma;<sup>2</sup>). P(X < &mu;) = ?",options:["0.5","0.25","0.75","1"],ans:0,exp:"Đối xứng."},
+                            {q:"[Ch2] V(X)=4 &rarr; &sigma;(X) = ?",options:["2","16","4","0"],ans:0,exp:"Căn 4."},
+                            {q:"[Ch3] Ký hiệu tỷ lệ:",options:["p và f","&mu; và <span style='text-decoration: overline;'>x</span>","&sigma;<sup>2</sup> và s<sup>2</sup>","p và m"],ans:0,exp:"p(tổng thể), f(mẫu)."},
+                            {q:"[Ch3] n=100, f=0.2. Số mang tính chất m=?",options:["20","80","100","0.2"],ans:0,exp:"100&middot;0.2 = 20."},
+                            {q:"[Ch4] Ước lượng điểm m là:",options:["<span style='text-decoration: overline;'>x</span>","s<sup>2</sup>","f","&sigma;"],ans:0,exp:"Trung bình mẫu."},
+                            {q:"[Ch4] &epsilon; của p (n=400, f=0.2, Z=2):",options:["0.04","0.02","0.08","0.1"],ans:0,exp:"2&middot;&radic;<span style='border-top: 1px solid;'>0.16/400</span> = 0.04."},
+                            {q:"[Ch5] KĐ tỷ lệ, Z tra bảng:",options:["Laplace","Student","&chi;<sup>2</sup>","Fisher"],ans:0,exp:"Bảng chuẩn."},
+                            {q:"[Ch5] Chấp nhận H sai là:",options:["Sai lầm loại 2","Sai lầm loại 1","Lỗi logic","Lỗi"],ans:0,exp:"Định nghĩa."},
+                            {q:"[Ch2] Xúc xắc, P(chấm &le; 2) = ?",options:["1/3","1/6","1/2","2/3"],ans:0,exp:"2/6 = 1/3."},
+                            {q:"[Ch3] ŝ<sup>2</sup> và s<sup>2</sup>, cái nào lớn?",options:["s<sup>2</sup>","ŝ<sup>2</sup>","Bằng nhau","Không rõ"],ans:0,exp:"s<sup>2</sup> có n/(n-1) > 1."},
+                            {q:"[Ch4] Công thức khoảng:",options:["(&theta;̂ - &epsilon;, &theta;̂ + &epsilon;)","(&theta;̂, &theta;̂ + &epsilon;)","(&theta;̂ - &epsilon;, &theta;̂)","(0, &epsilon;)"],ans:0,exp:"Đối xứng."},
+                            {q:"[Ch5] KĐ độc lập dùng:",options:["&chi;<sup>2</sup>","Chuẩn Z","Student T","Fisher F"],ans:0,exp:"Khi bình phương."}
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // Tích hợp logic xử lý phần trăm thực (dựa vào số câu đã hoàn thành)
+        const app = {
+            state: {
+                currentTab: 'learn',
+                currentSlideIndex: 0,
+                unlockedSlides: new Set(['c1_b1']), // Slide đầu mở sẵn
+                passedSpotChecks: new Set(),
+                activeExam: null,
+                userAnswers: [],
+                examTimer: null
+            },
+
+            init() {
+                this.renderSlideNav();
+                this.renderSlide(0);
+                this.renderExamList();
+                this.updateProgressBar();
+                
+                // Dark mode init
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            },
+
+            switchTab(tabId) {
+                this.state.currentTab = tabId;
+                document.getElementById('view-learn').style.opacity = tabId === 'learn' ? '1' : '0';
+                document.getElementById('view-learn').style.pointerEvents = tabId === 'learn' ? 'auto' : 'none';
+                
+                document.getElementById('view-exam').style.opacity = tabId === 'exam' ? '1' : '0';
+                document.getElementById('view-exam').style.pointerEvents = tabId === 'exam' ? 'auto' : 'none';
+
+                // Update active tab styles
+                ['learn', 'exam'].forEach(id => {
+                    const btn = document.getElementById(`tab-${id}`);
+                    if (id === tabId) {
+                        btn.className = `tab-btn px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20`;
+                    } else {
+                        btn.className = `tab-btn px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-dark-border`;
+                    }
+                });
+
+                if(tabId === 'exam' && !this.state.activeExam) {
+                    document.getElementById('exam-list-view').classList.remove('hidden');
+                    document.getElementById('active-exam-view').classList.add('hidden');
+                    document.getElementById('exam-result-view').classList.add('hidden');
+                }
+            },
+
+            toggleTheme() {
+                document.documentElement.classList.toggle('dark');
+                const icon = document.getElementById('theme-icon');
+                if (document.documentElement.classList.contains('dark')) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            },
+
+            updateProgressBar() {
+                // TÍNH PHẦN TRĂM DỰA TRÊN SỐ SLIDE ĐÃ VƯỢT QUA KIỂM TRA (TRỪ SLIDE CUỐI)
+                const totalPassableSlides = appData.slides.length;
+                // Số slide đã mở khóa trừ đi 1 (vì slide đầu luôn mở nhưng chưa tính là pass)
+                let passedCount = this.state.unlockedSlides.size - 1;
+                if(passedCount < 0) passedCount = 0;
+                
+                // Nếu đang ở slide cuối và đã pass nó thì tính 100%
+                const lastSlideId = appData.slides[appData.slides.length - 1].id;
+                let allPassed = true;
+                appData.slides[appData.slides.length - 1].examples.forEach(ex => {
+                    if (!this.state.passedSpotChecks.has(ex.id)) allPassed = false;
+                });
+                if (allPassed && this.state.unlockedSlides.has(lastSlideId)) {
+                    passedCount = totalPassableSlides;
+                }
+
+                const percent = Math.round((passedCount / totalPassableSlides) * 100);
+                
+                document.getElementById('nav-progress-bar').style.width = `${percent}%`;
+                document.getElementById('progress-percent').innerText = `${percent}%`;
+                document.getElementById('progress-text').innerText = `Hoàn thành: ${passedCount}/${totalPassableSlides} bài`;
+            },
+
+            renderSlideNav() {
+                const list = document.getElementById('slide-nav-list');
+                list.innerHTML = '';
+                appData.slides.forEach((slide, index) => {
+                    const isUnlocked = this.state.unlockedSlides.has(slide.id);
+                    const isActive = index === this.state.currentSlideIndex;
+                    
+                    const btn = document.createElement('button');
+                    btn.className = `w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3 group ${
+                        isActive ? 'bg-primary-50 border border-primary-200 dark:bg-primary-900/20 dark:border-primary-800/50' : 
+                        isUnlocked ? 'hover:bg-slate-50 border border-transparent dark:hover:bg-dark-border' : 'opacity-50 cursor-not-allowed border border-transparent'
+                    }`;
+                    
+                    btn.onclick = () => {
+                        if (isUnlocked) this.renderSlide(index);
+                    };
+
+                    const iconBg = isActive ? 'bg-primary-100 text-primary-600 dark:bg-primary-800 dark:text-primary-300' :
+                                   isUnlocked ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' : 'bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600';
+                    
+                    const icon = isUnlocked ? (isActive ? 'fa-book-open' : 'fa-check') : 'fa-lock';
+
+                    btn.innerHTML = `
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconBg}">
+                            <i class="fas ${icon} text-sm"></i>
+                        </div>
+                        <div class="flex-1 truncate">
+                            <div class="text-xs font-semibold ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500'}">${slide.chapter}</div>
+                            <div class="text-sm font-medium ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'} truncate" title="${slide.title}">${slide.title}</div>
+                        </div>
+                    `;
+                    list.appendChild(btn);
+                });
+            },
+
+            renderSlide(index) {
+                this.state.currentSlideIndex = index;
+                const slide = appData.slides[index];
+                
+                document.getElementById('slide-chapter-badge').innerText = slide.chapter;
+                document.getElementById('slide-title').innerText = slide.title;
+                document.getElementById('slide-theory').innerHTML = slide.theory;
+
+                const exContainer = document.getElementById('slide-examples-container');
+                exContainer.innerHTML = '';
+
+                if (slide.examples && slide.examples.length > 0) {
+                    document.getElementById('examples-divider').classList.remove('hidden');
+                    document.getElementById('examples-instruction').classList.remove('hidden');
+
+                    slide.examples.forEach((ex, exIndex) => {
+                        const isPassed = this.state.passedSpotChecks.has(ex.id);
+                        
+                        // Select a random variation to prevent memorizing position
+                        const variationIndex = Math.floor(Math.random() * ex.variations.length);
+                        const variation = ex.variations[variationIndex];
+
+                        const exBlock = document.createElement('div');
+                        exBlock.className = `bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border ${isPassed ? 'border-green-200 dark:border-green-900/50' : 'border-slate-200 dark:border-dark-border'}`;
+                        
+                        // Xây dựng phần ví dụ thầy
+                        let html = `
+                            <div class="text-slate-800 dark:text-slate-200 mb-4 pb-4 border-b border-slate-200 dark:border-dark-border text-lg">${ex.text}</div>
+                            <div class="mb-6">
+                                <button onclick="document.getElementById('step-${ex.id}').classList.toggle('hidden')" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-semibold text-sm flex items-center transition-colors">
+                                    <i class="fas fa-magic mr-2"></i> Xem giải thích từng bước & Bấm máy
+                                </button>
+                                <div id="step-${ex.id}" class="hidden mt-3 p-4 bg-white dark:bg-dark-surface rounded-lg text-sm text-slate-600 dark:text-slate-300 shadow-sm border border-slate-100 dark:border-dark-border animate-fade-in border-l-4 border-l-primary-500">
+                                    ${ex.stepByStep}
+                                </div>
+                            </div>
+                        `;
+
+                        // Phần Kiểm Tra Tại Chỗ (Spot Check)
+                        if (isPassed) {
+                            html += `
+                                <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800/30 flex items-center text-green-700 dark:text-green-400 animate-fade-in">
+                                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-800/50 flex items-center justify-center mr-4 shrink-0">
+                                        <i class="fas fa-check text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold">Đã vượt qua chốt kiểm tra!</p>
+                                        <p class="text-sm opacity-90">Bạn đã nắm vững dạng bài này.</p>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div class="bg-white dark:bg-dark-surface rounded-xl p-5 sm:p-6 shadow-sm border border-amber-200 dark:border-amber-900/30 relative overflow-hidden" id="spotcheck-container-${ex.id}">
+                                    <div class="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                            <i class="fas fa-lock"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-slate-800 dark:text-white uppercase tracking-wider text-sm">Khóa kiểm tra (Xào lại)</h4>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400">Trả lời đúng để chứng tỏ bạn đã hiểu bản chất và mở khóa bài học.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="font-medium text-slate-800 dark:text-slate-200 mb-6 text-lg p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">${variation.q}</p>
+                                    
+                                    <div class="grid sm:grid-cols-2 gap-3" id="options-${ex.id}">
+                                        ${variation.options.map((opt, i) => `
+                                            <button onclick="app.checkSpotCheck('${ex.id}', ${i}, ${variation.ansIndex}, ${variationIndex})" class="w-full text-left p-4 rounded-xl border border-slate-200 dark:border-dark-border hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:border-primary-500 transition-all font-medium text-slate-700 dark:text-slate-300 group">
+                                                <span class="inline-block w-6 font-bold text-slate-400 group-hover:text-primary-500 transition-colors">${String.fromCharCode(65+i)}.</span> ${opt}
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                    <div id="feedback-${ex.id}" class="hidden mt-4 text-sm font-medium animate-fade-in p-3 rounded-lg"></div>
+                                </div>
+                            `;
+                        }
+                        
+                        exBlock.innerHTML = html;
+                        exContainer.appendChild(exBlock);
+                    });
+                } else {
+                    document.getElementById('examples-divider').classList.add('hidden');
+                    document.getElementById('examples-instruction').classList.add('hidden');
+                }
+
+                this.renderSlideNav();
+                this.checkSlideLockStatus();
+                // Scroll to top of content
+                document.getElementById('slide-content-area').scrollTop = 0;
+            },
+
+            checkSpotCheck(exampleId, selectedIdx, correctIdx, variationIndex) {
+                const feedbackEl = document.getElementById(`feedback-${exampleId}`);
+                const optionsContainer = document.getElementById(`options-${exampleId}`);
+                const buttons = optionsContainer.querySelectorAll('button');
+                
+                // Disable buttons
+                buttons.forEach(btn => btn.disabled = true);
+
+                if (selectedIdx === correctIdx) {
+                    // Correct
+                    buttons[selectedIdx].className = "w-full text-left p-4 rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 font-medium text-green-800 dark:text-green-300 relative overflow-hidden";
+                    feedbackEl.className = "mt-4 text-sm font-bold text-green-600 dark:text-green-400 animate-fade-in p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center";
+                    feedbackEl.innerHTML = '<i class="fas fa-check-circle text-lg mr-2"></i> Chính xác! Bạn đã hiểu bài.';
+                    feedbackEl.classList.remove('hidden');
+                    
+                    this.state.passedSpotChecks.add(exampleId);
+                    this.checkSlideLockStatus();
+                    
+                    // Re-render slide to show compact checkmark mode
+                    setTimeout(() => {
+                        this.renderSlide(this.state.currentSlideIndex);
+                    }, 1500);
+
+                } else {
+                    // Wrong
+                    buttons[selectedIdx].className = "w-full text-left p-4 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-900/20 font-medium text-red-800 dark:text-red-300";
+                    buttons[correctIdx].className = "w-full text-left p-4 rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 font-medium text-green-800 dark:text-green-300 opacity-70";
+                    
+                    const slide = appData.slides[this.state.currentSlideIndex];
+                    const ex = slide.examples.find(e => e.id === exampleId);
+                    const hint = ex.variations[variationIndex].hint;
+
+                    feedbackEl.className = "mt-4 text-sm font-medium text-red-600 dark:text-red-400 animate-fade-in p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800/50";
+                    feedbackEl.innerHTML = `
+                        <div class="flex items-start mb-3">
+                            <i class="fas fa-times-circle text-lg mr-2 mt-0.5"></i> 
+                            <div>
+                                <strong class="block mb-1">Sai rồi! Xem lại gợi ý:</strong>
+                                <span class="opacity-90">${hint}</span>
+                            </div>
+                        </div>
+                        <button onclick="app.renderSlide(${this.state.currentSlideIndex})" class="w-full bg-white dark:bg-dark-surface border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 py-2 rounded-lg font-bold hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm">
+                            <i class="fas fa-sync-alt mr-2"></i>Thử lại với số liệu khác
+                        </button>
+                    `;
+                    feedbackEl.classList.remove('hidden');
+                }
+            },
+
+            checkSlideLockStatus() {
+                const slide = appData.slides[this.state.currentSlideIndex];
+                let allPassed = true;
+                
+                if (slide.examples) {
+                    slide.examples.forEach(ex => {
+                        if (!this.state.passedSpotChecks.has(ex.id)) {
+                            allPassed = false;
+                        }
+                    });
+                }
+
+                const btnNext = document.getElementById('btn-next-slide');
+                const lockStatus = document.getElementById('lock-status');
+                const isLastSlide = this.state.currentSlideIndex === appData.slides.length - 1;
+
+                if (allPassed) {
+                    // Update Progress
+                    this.updateProgressBar();
+
+                    if (!isLastSlide) {
+                        const nextSlideId = appData.slides[this.state.currentSlideIndex + 1].id;
+                        this.state.unlockedSlides.add(nextSlideId);
+                        this.renderSlideNav();
+                        
+                        btnNext.disabled = false;
+                        btnNext.className = "w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center group animate-pulse-soft cursor-pointer";
+                        
+                        lockStatus.className = "flex items-center justify-center px-4 py-3 rounded-xl bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50 w-full sm:w-auto animate-fade-in";
+                        lockStatus.innerHTML = '<i class="fas fa-unlock mr-2"></i> <span class="font-medium text-sm">Đã mở khóa trang tiếp theo!</span>';
+                    } else {
+                        btnNext.disabled = true;
+                        btnNext.classList.add('hidden');
+                        lockStatus.className = "flex items-center justify-center px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg w-full sm:w-auto animate-fade-in";
+                        lockStatus.innerHTML = '<i class="fas fa-trophy mr-2 text-yellow-300"></i> <span class="font-bold text-sm">Chúc mừng! Bạn đã hoàn thành toàn bộ lý thuyết.</span>';
+                    }
+                } else {
+                    btnNext.disabled = true;
+                    btnNext.className = "w-full sm:w-auto opacity-50 cursor-not-allowed bg-primary-600 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center group";
+                    
+                    lockStatus.className = "flex items-center justify-center px-4 py-3 rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 w-full sm:w-auto";
+                    lockStatus.innerHTML = '<i class="fas fa-lock mr-2"></i> <span class="font-medium text-sm">Hoàn thành bài kiểm tra bên trên để đi tiếp</span>';
+                }
+            },
+
+            nextSlide() {
+                if (this.state.currentSlideIndex < appData.slides.length - 1) {
+                    this.renderSlide(this.state.currentSlideIndex + 1);
+                }
+            },
+
+            renderExamList() {
+                const renderList = (exams, containerId, type) => {
+                    const container = document.getElementById(containerId);
+                    container.innerHTML = '';
+                    exams.forEach((exam, index) => {
+                        container.innerHTML += `
+                            <div class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-dark-border hover:border-primary-500 hover:shadow-md transition-all group cursor-pointer bg-slate-50 dark:bg-slate-800/50" onclick="app.startExam('${type}', ${index})">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">${exam.title}</h4>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${exam.subtitle} • ${exam.questions.length} câu</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border flex items-center justify-center text-slate-400 group-hover:bg-primary-500 group-hover:text-white group-hover:border-primary-500 transition-all shrink-0">
+                                    <i class="fas fa-play ml-1"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+                };
+
+                renderList(appData.exams.midterm, 'midterm-list', 'midterm');
+                renderList(appData.exams.final, 'final-list', 'final');
+            },
+
+            startExam(type, index) {
+                this.state.activeExam = appData.exams[type][index];
+                this.state.userAnswers = new Array(this.state.activeExam.questions.length).fill(null);
+                
+                document.getElementById('exam-list-view').classList.add('hidden');
+                document.getElementById('exam-result-view').classList.add('hidden');
+                document.getElementById('active-exam-view').classList.remove('hidden');
+                document.getElementById('active-exam-title').innerText = this.state.activeExam.title;
+
+                const container = document.getElementById('exam-questions-container');
+                container.innerHTML = '';
+
+                this.state.activeExam.questions.forEach((q, i) => {
+                    container.innerHTML += `
+                        <div class="bg-white dark:bg-dark-surface rounded-2xl shadow-sm border border-slate-200 dark:border-dark-border p-6" id="q-block-${i}">
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-4 flex">
+                                <span class="shrink-0 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm mr-3 text-slate-500">${i+1}</span>
+                                <span class="pt-1">${q.q}</span>
+                            </h3>
+                            <div class="space-y-3 pl-11">
+                                ${q.options.map((opt, optIdx) => `
+                                    <label class="flex items-center p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors" id="label-${i}-${optIdx}">
+                                        <input type="radio" name="q-${i}" value="${optIdx}" onchange="app.selectAnswer(${i}, ${optIdx})" class="w-5 h-5 text-primary-600 border-slate-300 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-700">
+                                        <span class="ml-3 font-medium text-slate-700 dark:text-slate-300 text-sm sm:text-base">${String.fromCharCode(65+optIdx)}. ${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Cuộn lên đầu bài thi
+                document.getElementById('exam-questions-area').scrollTop = 0;
+            },
+
+            selectAnswer(qIndex, optIndex) {
+                this.state.userAnswers[qIndex] = optIndex;
+                
+                // Remove highlight from all labels in this question
+                for(let i=0; i<4; i++) {
+                    const lbl = document.getElementById(`label-${qIndex}-${i}`);
+                    if(lbl) lbl.classList.remove('border-primary-500', 'bg-primary-50', 'dark:border-primary-500', 'dark:bg-primary-900/20');
+                }
+                
+                // Add highlight to selected
+                const selectedLbl = document.getElementById(`label-${qIndex}-${optIndex}`);
+                selectedLbl.classList.add('border-primary-500', 'bg-primary-50', 'dark:border-primary-500', 'dark:bg-primary-900/20');
+            },
+
+            // Cập nhật lại thuật toán tính điểm hoàn hảo làm tròn thập phân
+            submitExam() {
+                let correctCount = 0;
+                const total = this.state.activeExam.questions.length;
+                
+                this.state.userAnswers.forEach((ans, idx) => {
+                    if (ans === this.state.activeExam.questions[idx].ans) correctCount++;
+                });
+
+                // TÍNH ĐIỂM CHUẨN XÁC
+                // Mỗi câu đúng sẽ bằng tổng điểm chia cho tổng số câu.
+                const rawScore = (correctCount / total) * this.state.activeExam.maxScore;
+                // Làm tròn 1 chữ số thập phân
+                const finalScore = Math.round(rawScore * 10) / 10;
+
+                document.getElementById('active-exam-view').classList.add('hidden');
+                document.getElementById('exam-result-view').classList.remove('hidden');
+                
+                const scoreEl = document.getElementById('result-score');
+                scoreEl.innerText = finalScore.toFixed(1); // Đảm bảo luôn hiện 1 số thập phân (VD: 2.0, 1.5)
+                
+                // Color based on score percentage
+                const percentage = correctCount / total;
+                if(percentage >= 0.8) scoreEl.className = "text-6xl font-black text-green-500 my-4";
+                else if (percentage >= 0.5) scoreEl.className = "text-6xl font-black text-amber-500 my-4";
+                else scoreEl.className = "text-6xl font-black text-red-500 my-4";
+
+                document.getElementById('result-text').innerText = `Đúng ${correctCount}/${total} câu`;
+
+                const detailsContainer = document.getElementById('result-details-container');
+                detailsContainer.innerHTML = '';
+
+                this.state.activeExam.questions.forEach((q, i) => {
+                    const userAns = this.state.userAnswers[i];
+                    const isCorrect = userAns === q.ans;
+                    const notAnswered = userAns === null;
+
+                    detailsContainer.innerHTML += `
+                        <div class="bg-white dark:bg-dark-surface rounded-xl p-5 border ${isCorrect ? 'border-green-200 dark:border-green-900/50' : 'border-red-200 dark:border-red-900/50'} shadow-sm">
+                            <p class="font-bold text-slate-800 dark:text-white mb-3">Câu ${i+1}: ${q.q}</p>
+                            <div class="grid sm:grid-cols-2 gap-2 mb-3 text-sm">
+                                <div class="p-3 rounded-lg ${notAnswered ? 'bg-slate-100 dark:bg-slate-800 text-slate-500' : (isCorrect ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400')} font-medium">
+                                    Bạn chọn: ${notAnswered ? 'Không trả lời' : q.options[userAns]}
+                                </div>
+                                <div class="p-3 rounded-lg bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">
+                                    Đáp án đúng: ${q.options[q.ans]}
+                                </div>
+                            </div>
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-sm text-slate-600 dark:text-slate-400 border-l-4 border-slate-300 dark:border-slate-600">
+                                <strong>Giải thích:</strong> ${q.exp}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Cuộn lên đầu trang kết quả
+                document.getElementById('exam-result-view').scrollTop = 0;
+            },
+
+            exitExam() {
+                this.state.activeExam = null;
+                document.getElementById('active-exam-view').classList.add('hidden');
+                document.getElementById('exam-result-view').classList.add('hidden');
+                document.getElementById('exam-list-view').classList.remove('hidden');
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
